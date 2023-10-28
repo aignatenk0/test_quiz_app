@@ -1,9 +1,8 @@
 package com.example.quizapp.presentation.questions
 
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,8 +15,11 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -34,81 +36,78 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuestionScreen(
-    viewModel: QuestionsViewModel = hiltViewModel(),
-    navHostController: NavHostController
+    viewModel: QuestionsViewModel = hiltViewModel(), navHostController: NavHostController
 ) {
     val coroutineScope = rememberCoroutineScope()
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val index by viewModel.currentItemIndex.observeAsState()
+
     Scaffold(
-        topBar = {TopBar(navHostController, viewModel)},
+        topBar = { TopBar(index!!, navHostController, viewModel) },
         content = { padding ->
-            val currentItem = viewModel.itemList.getOrNull(viewModel.currentItemIndex)
-            Text(
-                text = currentItem ?: "No item found",
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .wrapContentSize(Alignment.Center)
-                    .padding(16.dp),
-                style = TextStyle(fontSize = 24.sp),
-                textAlign = TextAlign.Center
-            )
-
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = "Snackbar Message",
-                            duration = SnackbarDuration.Short
-                        )
-                    }
-                },
-                modifier = Modifier.padding(padding)
+                    .padding(0.dp)
             ) {
-                Text("Show Snackbar")
-            }
-        },
+                val currentItem = viewModel.itemList.getOrNull(index!!)
+                Text(
+                    text = currentItem ?: "No item found",
+                    style = TextStyle(fontSize = 24.sp),
+                    textAlign = TextAlign.Center
+                )
 
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Snackbar Message", duration = SnackbarDuration.Short
+                            )
+                        }
+                    }, modifier = Modifier.padding(padding)
+                ) {
+                    Text("Show Snackbar")
+                }
+            }
+
+        },
         snackbarHost = {
             SnackbarHost(
                 hostState = snackbarHostState,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(10.dp),
             )
-        }
-    )
+        })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(navHostController: NavHostController, vm: QuestionsViewModel) {
-    TopAppBar(
-        navigationIcon = {
-            IconButton(
-                onClick = { navHostController.popBackStack() }
-            ) {
-                Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
-            }
-        },
-        title = {
-            Text(
-                text = "Title",
-                style = TextStyle(
-                    color = Color.Unspecified,
-                    fontSize = 24.sp
-                )
-            )
-        },
-        actions = {
-            Button(onClick = { vm.currentItemIndex-- }) {
-
-                Text(text = "Previous")
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(onClick = { vm.currentItemIndex++ }) {
-
-                Text(text = "Next")
-            }
+fun TopBar(index: Int, navHostController: NavHostController, vm: QuestionsViewModel) {
+    val questionsQuantity = vm.itemList.size
+    TopAppBar(navigationIcon = {
+        IconButton(onClick = { navHostController.popBackStack() }) {
+            Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
         }
-    )
+    }, title = {
+        Text(
+            text = "Question ${index + 1}/$questionsQuantity", style = TextStyle(
+                color = Color.Unspecified, fontSize = 20.sp
+            )
+        )
+    }, actions = {
+        TextButton(
+            onClick = { vm.update(false) },
+            enabled = index > 0
+        ) {
+            Text(text = "Previous")
+        }
+        TextButton(
+            onClick = { vm.update(true) },
+            enabled = index < questionsQuantity - 1
+        ) {
+            Text(text = "Next")
+        }
+    })
 }
