@@ -3,6 +3,7 @@ package com.example.quizapp.data.datasource.remote
 import com.example.quizapp.data.datasource.remote.dto.AnswerDto
 import com.example.quizapp.data.datasource.remote.dto.QuestionDto
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
@@ -11,7 +12,7 @@ interface ApiService {
     suspend fun getQuestions(): Response<List<QuestionDto>>
 
     @POST("question/submit")
-    suspend fun checkAnswer(answer: AnswerDto): Response<Unit>
+    suspend fun checkAnswer(@Body answer: AnswerDto): Response<Unit>
 
     companion object {
         const val BASE_URL = "https://xm-assignment.web.app/"

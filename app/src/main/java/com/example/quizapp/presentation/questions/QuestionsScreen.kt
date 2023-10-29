@@ -1,12 +1,16 @@
 package com.example.quizapp.presentation.questions
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,7 +23,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -36,43 +39,64 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuestionScreen(
-    viewModel: QuestionsViewModel = hiltViewModel(), navHostController: NavHostController
+    viewModel: QuestionsViewModel = hiltViewModel(),
+    navHostController: NavHostController
 ) {
     val coroutineScope = rememberCoroutineScope()
-
     val snackbarHostState = remember { SnackbarHostState() }
-
-    val index by viewModel.currentItemIndex.observeAsState()
+    val currentQuestionState by viewModel.currentQuestionState
 
     Scaffold(
-        topBar = { TopBar(index!!, navHostController, viewModel) },
+        topBar = { TopBar(currentQuestionState, navHostController, viewModel) },
         content = { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .wrapContentSize(Alignment.Center)
-                    .padding(0.dp)
-            ) {
-                val currentItem = viewModel.itemList.getOrNull(index!!)
-                Text(
-                    text = currentItem ?: "No item found",
-                    style = TextStyle(fontSize = 24.sp),
-                    textAlign = TextAlign.Center
-                )
-
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar(
-                                message = "Snackbar Message", duration = SnackbarDuration.Short
-                            )
-                        }
-                    }, modifier = Modifier.padding(padding)
+            if (currentQuestionState.isLoading.not()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .wrapContentSize(Alignment.Center)
+                        .padding(0.dp)
                 ) {
-                    Text("Show Snackbar")
+                    Text(
+                        text = currentQuestionState.question?.text ?: "No items found",
+                        style = TextStyle(fontSize = 24.sp),
+                        textAlign = TextAlign.Center
+                    )
+                    val question = currentQuestionState.question
+                    if (question != null) {
+                        Button(
+                            enabled = question.isSubmitted.not(),
+                            onClick = {
+                                viewModel.onEvent(
+                                    QuestionEvent.SubmitAnswer(
+                                        question.id,
+                                        "Text"
+                                    )
+                                )
+                            }, modifier = Modifier
+                                .padding(padding)
+                                .align(Alignment.CenterHorizontally)
+                        ) {
+                            if (question.isSubmitted) {
+                                Text("Already submitted")
+                            } else {
+                                Text("Submit")
+                            }
+                        }
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(450.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator(
+                        color = Color.Blue
+                    )
                 }
             }
-
         },
         snackbarHost = {
             SnackbarHost(
@@ -84,28 +108,32 @@ fun QuestionScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(index: Int, navHostController: NavHostController, vm: QuestionsViewModel) {
-    val questionsQuantity = vm.itemList.size
+fun TopBar(
+    state: CurrentQuestionState,
+    navHostController: NavHostController,
+    vm: QuestionsViewModel
+) {
     TopAppBar(navigationIcon = {
         IconButton(onClick = { navHostController.popBackStack() }) {
             Icon(imageVector = Icons.Default.ArrowBack, contentDescription = null)
         }
     }, title = {
         Text(
-            text = "Question ${index + 1}/$questionsQuantity", style = TextStyle(
+            text = "Question ${state.questionNumber}/${state.questionsQuantity}",
+            style = TextStyle(
                 color = Color.Unspecified, fontSize = 20.sp
             )
         )
     }, actions = {
         TextButton(
-            onClick = { vm.update(false) },
-            enabled = index > 0
+            onClick = { vm.onEvent(QuestionEvent.PreviousQuestion) },
+            enabled = state.isLoading.not() && state.questionNumber > 1
         ) {
             Text(text = "Previous")
         }
         TextButton(
-            onClick = { vm.update(true) },
-            enabled = index < questionsQuantity - 1
+            onClick = { vm.onEvent(QuestionEvent.NextQuestion) },
+            enabled = state.isLoading.not() && state.questionNumber < state.questionsQuantity
         ) {
             Text(text = "Next")
         }

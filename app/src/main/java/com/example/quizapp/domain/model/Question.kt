@@ -2,5 +2,6 @@ package com.example.quizapp.domain.model
 
 data class Question(
     val id: Int,
-    val text: String
+    val text: String,
+    var isSubmitted: Boolean = false
 )
