@@ -90,6 +90,14 @@ class QuestionsViewModel @Inject constructor(
                 }
             }
 
+            is QuestionEvent.Retry -> {
+                currentQuestion.answerStatus = AnswerStatus.NOT_SET
+                currentQuestion.isSubmitted = false
+                currentQuestion.isEnabled = true
+                _currentQuestionState.value = currentQuestionState.value.copy(
+                    questionsSubmitted = currentQuestionState.value.questionsSubmitted - 1
+                )
+            }
         }
     }
 
