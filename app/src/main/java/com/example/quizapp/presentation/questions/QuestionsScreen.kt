@@ -52,7 +52,6 @@ fun QuestionScreen(
     viewModel: QuestionsViewModel = hiltViewModel(),
     navHostController: NavHostController
 ) {
-    val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val currentQuestionState by viewModel.currentQuestionState
 
@@ -152,9 +151,7 @@ fun QuestionScreen(
             )
         })
 
-    var snackbarShown by rememberSaveable { mutableStateOf(false) }
-
-    if (currentQuestionState.question?.answerStatus != AnswerStatus.NOT_SET && snackbarShown.not()) {
+    if (currentQuestionState.question?.answerStatus != AnswerStatus.NOT_SET) {
         val snackbarMessage = when (currentQuestionState.question?.answerStatus) {
             AnswerStatus.CORRECT -> "Success!"
             AnswerStatus.WRONG -> "Failure..."
@@ -165,7 +162,6 @@ fun QuestionScreen(
             snackbarHostState.showSnackbar(
                 message = snackbarMessage, duration = SnackbarDuration.Short
             )
-            snackbarShown = true
         }
     }
 }
