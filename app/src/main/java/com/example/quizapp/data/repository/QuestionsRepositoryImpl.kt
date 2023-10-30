@@ -3,6 +3,7 @@ package com.example.quizapp.data.repository
 import com.example.quizapp.data.datasource.remote.ApiService
 import com.example.quizapp.data.datasource.remote.dto.AnswerDto
 import com.example.quizapp.domain.model.Question
+import com.example.quizapp.domain.model.AnswerStatus
 import com.example.quizapp.domain.repository.QuestionsRepository
 
 class QuestionsRepositoryImpl(
@@ -25,10 +26,18 @@ class QuestionsRepositoryImpl(
         }
     }
 
-    override suspend fun checkAnswer(id: Int, answer: String): Boolean {
-        val resp = apiService.checkAnswer(
-            AnswerDto(id, answer)
-        )
-        return false
+    override suspend fun checkAnswer(id: Int, answer: String): AnswerStatus {
+        try {
+            val resp = apiService.checkAnswer(
+                AnswerDto(id, answer)
+            )
+            when (resp.code()){
+                200 -> return AnswerStatus.CORRECT
+                400 -> return AnswerStatus.WRONG
+                else -> return AnswerStatus.ERROR
+            }
+        } catch (e: Exception) {
+            return AnswerStatus.ERROR
+        }
     }
 }
